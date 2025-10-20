@@ -33,6 +33,8 @@ def parse_args():
     args.add_argument('--epochs', type=int, default=300)
     args.add_argument('--base_model', type=str, default='gcn', choices=['gcn', 'gat', 'gin', 'sage'])
     args.add_argument('--seed', type=int, default=0)
+    args.add_argument('--plot_tsne', action='store_true', help='Generate t-SNE visualization')
+    args.add_argument('--force', action='store_true', help='Force rerun even if results exist')  # NEW LINE
     args = args.parse_args()
     return args
 
@@ -205,18 +207,24 @@ if __name__ == '__main__':
     device = args.device
     base_model = args.base_model
     seed = args.seed
+    plot_tsne = args.plot_tsne
+    force_rerun = args.force  # NEW LINE
 
-    # if results exist then skip
-    if alp == 0.0 and os.path.exists(f'results/results_{dataset_name}_{lam}_{epochs}_{base_model}_{seed}.pt'):
-        print(f'results/results_{dataset_name}_{lam}_{epochs}_{base_model}_{seed}.pt exists. Skipping...')
-        exit()
-    elif alp != 0.0 and os.path.exists(f'results/results_{dataset_name}_{lam}_{alp}_{epochs}_{base_model}_{seed}.pt'):
-        print(f'results/results_{dataset_name}_{lam}_{alp}_{epochs}_{base_model}_{seed}.pt exists. Skipping...')
-        exit()
+    # if results exist then skip (UNLESS --force is used)
+    if not force_rerun:  # NEW: Wrap the skip check in this condition
+        if alp == 0.0 and os.path.exists(f'results/results_{dataset_name}_{lam}_{epochs}_{base_model}_{seed}.pt'):
+            print(f'results/results_{dataset_name}_{lam}_{epochs}_{base_model}_{seed}.pt exists. Skipping...')
+            exit()
+        elif alp != 0.0 and os.path.exists(f'results/results_{dataset_name}_{lam}_{alp}_{epochs}_{base_model}_{seed}.pt'):
+            print(f'results/results_{dataset_name}_{lam}_{alp}_{epochs}_{base_model}_{seed}.pt exists. Skipping...')
+            exit()
+    else:  # NEW: Optional message when forcing rerun
+        print('--force flag detected: Overwriting existing results if present.')
 
     torch.manual_seed(seed)
     random.seed(seed)
     np.random.seed(seed)
+
 
     # device selection
     if torch.cuda.is_available() and device != 'cpu':
